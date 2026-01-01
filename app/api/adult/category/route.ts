@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 
 export const runtime = 'edge';
+// 静态导出时需要配置，但 API 路由会被跳过（配置值不重要）
+export const dynamic = 'force-static';
+export const revalidate = 0;
 // We still import this type but won't rely on the empty array
 import { ADULT_SOURCES } from '@/lib/api/adult-sources';
 

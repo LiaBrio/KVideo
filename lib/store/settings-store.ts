@@ -45,12 +45,19 @@ export const getDefaultAdultSources = (): VideoSource[] => ADULT_SOURCES;
 
 
 function getEnvSubscriptions(customValue?: string): SourceSubscription[] {
+  // 默认订阅源 URL
+  const DEFAULT_SUBSCRIPTION_URL = 'https://raw.githubusercontent.com/rapier15sapper/ew/refs/heads/main/test.json';
+  
   const envValue = (customValue || process.env.SUBSCRIPTION_SOURCES || process.env.NEXT_PUBLIC_SUBSCRIPTION_SOURCES || '').trim();
-  if (!envValue) return [];
+  
+  // 如果没有环境变量，使用默认订阅源
+  const finalValue = envValue || DEFAULT_SUBSCRIPTION_URL;
+  
+  if (!finalValue) return [];
 
   // 1. Try JSON
   try {
-    const raw = JSON.parse(envValue);
+    const raw = JSON.parse(finalValue);
     if (Array.isArray(raw)) {
       return raw
         .filter((item: any) => item && typeof item.name === 'string' && typeof item.url === 'string')
@@ -62,8 +69,8 @@ function getEnvSubscriptions(customValue?: string): SourceSubscription[] {
 
   // 2. Try Simple URL (or comma separated)
   // Check if it looks like a URL (basic check)
-  if (envValue.includes('http')) {
-    const urls = envValue.split(',').map(u => u.trim()).filter(u => u.length > 0);
+  if (finalValue.includes('http')) {
+    const urls = finalValue.split(',').map(u => u.trim()).filter(u => u.length > 0);
     return urls.map((url, index) => {
       // Basic URL validation
       if (!url.startsWith('http')) return null;

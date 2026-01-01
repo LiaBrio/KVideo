@@ -3,6 +3,9 @@ import { processM3u8Content } from '@/lib/utils/proxy-utils';
 import { fetchWithRetry } from '@/lib/utils/fetch-with-retry';
 
 export const runtime = 'edge';
+// 静态导出时需要配置，但 API 路由会被跳过（配置值不重要）
+export const dynamic = 'force-static';
+export const revalidate = 0;
 
 // Disable SSL verification for video sources with invalid certificates
 // Note: This is not supported in Cloudflare Workers/Edge Runtime.

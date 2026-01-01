@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { ADULT_SOURCES } from '@/lib/api/adult-sources';
 
 export const runtime = 'edge';
-
-export const revalidate = 3600; // Cache for 1 hour
+// 静态导出时需要配置，但 API 路由会被跳过（配置值不重要）
+export const dynamic = 'force-static';
+export const revalidate = 0;
 
 interface Category {
     type_id: number;

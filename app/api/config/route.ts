@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
+// 静态导出时需要配置，但 API 路由会被跳过（配置值不重要）
+export const dynamic = 'force-static';
+export const revalidate = 0;
 
 const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD || '';
 const SUBSCRIPTION_SOURCES = process.env.SUBSCRIPTION_SOURCES || process.env.NEXT_PUBLIC_SUBSCRIPTION_SOURCES || '';

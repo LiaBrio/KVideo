@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // 如果设置了 BUILD_APK 环境变量，则使用静态导出（用于 APK 打包）
+  // 否则使用默认模式（用于 Vercel 部署）
+  ...(process.env.BUILD_APK === 'true' ? { output: 'export' } : {}),
+
   // Performance optimizations
   reactStrictMode: true,
   poweredByHeader: false,
@@ -10,8 +14,9 @@ const nextConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
 
-  output: 'standalone',
-  outputFileTracingRoot: __dirname,
+  // Vercel 使用 serverless 函数，不需要 standalone 输出
+  // output: 'standalone',
+  // outputFileTracingRoot: __dirname,
   turbopack: {
     root: __dirname,
   },
