@@ -103,24 +103,80 @@ export function parseSourcesFromJson(jsonString: string): ImportResult {
  * Fetch and parse sources from a URL
  */
 export async function fetchSourcesFromUrl(url: string): Promise<ImportResult> {
-    // If we're in the browser and it's an external URL, use our proxy to avoid CORS issues
+    // Check if we're in a static export environment (APK/Capacitor)
+    const isStaticExport = typeof window !== 'undefined' && (
+        window.location.protocol === 'file:' ||
+        window.location.protocol === 'capacitor:' ||
+        (window as any).Capacitor !== undefined
+    );
+
+    // If we're in the browser and it's an external URL, try to use our proxy to avoid CORS issues
+    // But in static export (APK), API routes don't work, so we'll try direct fetch with fallback
     const isExternal = url.startsWith('http') && (typeof window !== 'undefined' && !url.includes(window.location.host));
-    const fetchUrl = isExternal
-        ? `/api/proxy?url=${encodeURIComponent(url)}`
-        : url;
+    
+    let fetchUrl = url;
+    let useProxy = false;
 
-    const response = await fetch(fetchUrl, {
-        headers: {
-            'Accept': 'application/json',
-        },
-    });
-
-    if (!response.ok) {
-        throw new Error(`获取失败: ${response.status} ${response.statusText}`);
+    if (isExternal && !isStaticExport) {
+        // Try proxy first in non-static environments
+        fetchUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+        useProxy = true;
     }
 
-    const text = await response.text();
-    return parseSourcesFromJson(text);
+    try {
+        const response = await fetch(fetchUrl, {
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            // If proxy failed and we haven't tried direct fetch yet, try direct fetch
+            if (useProxy && response.status >= 400) {
+                console.warn('Proxy failed, trying direct fetch:', url);
+                const directResponse = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                });
+
+                if (!directResponse.ok) {
+                    throw new Error(`获取失败: ${directResponse.status} ${directResponse.statusText}`);
+                }
+
+                const text = await directResponse.text();
+                return parseSourcesFromJson(text);
+            }
+
+            throw new Error(`获取失败: ${response.status} ${response.statusText}`);
+        }
+
+        const text = await response.text();
+        return parseSourcesFromJson(text);
+    } catch (error) {
+        // If proxy request failed and we haven't tried direct fetch, try direct fetch
+        if (useProxy && isExternal) {
+            console.warn('Proxy request failed, trying direct fetch:', error);
+            try {
+                const directResponse = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                });
+
+                if (!directResponse.ok) {
+                    throw new Error(`获取失败: ${directResponse.status} ${directResponse.statusText}`);
+                }
+
+                const text = await directResponse.text();
+                return parseSourcesFromJson(text);
+            } catch (directError) {
+                throw new Error(`获取失败: ${error instanceof Error ? error.message : '未知错误'}`);
+            }
+        }
+
+        throw error;
+    }
 }
 
 /**
