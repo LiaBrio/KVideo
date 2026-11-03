@@ -7,10 +7,11 @@ import { Lock } from 'lucide-react';
 const SESSION_UNLOCKED_KEY = 'kvideo-unlocked';
 
 export function PasswordGate({ children, hasEnvPassword: initialHasEnvPassword }: { children: React.ReactNode, hasEnvPassword: boolean }) {
-    const [isLocked, setIsLocked] = useState(true);
+    // Server and the first client render must match. Env password is known on the
+    // server; a device-local password is applied after mount.
+    const [isLocked, setIsLocked] = useState(initialHasEnvPassword);
     const [password, setPassword] = useState('');
     const [error, setError] = useState(false);
-    const [isClient, setIsClient] = useState(false);
     const [hasEnvPassword, setHasEnvPassword] = useState(initialHasEnvPassword);
     const [isValidating, setIsValidating] = useState(false);
 
@@ -18,12 +19,10 @@ export function PasswordGate({ children, hasEnvPassword: initialHasEnvPassword }
         const settings = settingsStore.getSettings();
         const isUnlocked = sessionStorage.getItem(SESSION_UNLOCKED_KEY) === 'true';
 
-        // Determine initial lock state immediately
         // Lock if (local password enabled OR env password exists) AND not already unlocked in session
         const shouldBeLocked = (settings.passwordAccess || initialHasEnvPassword) && !isUnlocked;
 
         setIsLocked(shouldBeLocked);
-        setIsClient(true);
 
         // Still run background checks to keep everything in sync
         checkEnvPasswordStatus();
@@ -108,8 +107,6 @@ export function PasswordGate({ children, hasEnvPassword: initialHasEnvPassword }
         form?.classList.add('animate-shake');
         setTimeout(() => form?.classList.remove('animate-shake'), 500);
     };
-
-    if (!isClient) return null; // Prevent hydration mismatch
 
     if (!isLocked) {
         return <>{children}</>;
