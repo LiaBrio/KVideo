@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { Analytics } from "@vercel/analytics/react";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { PasswordGate } from "@/components/PasswordGate";
+import { isPubliclyIndexable, SITE_URL } from "@/lib/site-indexing";
 
 
 const geistSans = Geist({
@@ -19,11 +20,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "KVideo - 视频聚合平台",
   description: "Multi-source video aggregation platform with beautiful Liquid Glass UI",
   icons: {
     icon: '/icon.png',
   },
+  robots: isPubliclyIndexable()
+    ? { index: true, follow: true }
+    : { index: false, follow: false },
 };
 
 export default function RootLayout({
