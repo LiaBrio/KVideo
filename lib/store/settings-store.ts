@@ -5,7 +5,11 @@
 import type { VideoSource, SourceSubscription } from '@/lib/types';
 import { DEFAULT_SOURCES } from '@/lib/api/default-sources';
 import { ADULT_SOURCES } from '@/lib/api/adult-sources';
+import { SITE_URL } from '@/lib/site-indexing';
 import { createSubscription } from '@/lib/utils/source-import-utils';
+
+// 旧的默认订阅（第三方列表，含大量失效源和成人源），已弃用
+const LEGACY_DEFAULT_SUBSCRIPTION_URL = 'https://raw.githubusercontent.com/rapier15sapper/ew/refs/heads/main/test.json';
 
 export type SortOption =
   | 'default'
@@ -45,8 +49,8 @@ export const getDefaultAdultSources = (): VideoSource[] => ADULT_SOURCES;
 
 
 function getEnvSubscriptions(customValue?: string): SourceSubscription[] {
-  // 默认订阅源 URL
-  const DEFAULT_SUBSCRIPTION_URL = 'https://raw.githubusercontent.com/rapier15sapper/ew/refs/heads/main/test.json';
+  // 默认订阅源 URL：仓库内自带、经过检测的源列表（public/sources.json）
+  const DEFAULT_SUBSCRIPTION_URL = `${SITE_URL}/sources.json`;
   
   const envValue = (customValue || process.env.SUBSCRIPTION_SOURCES || process.env.NEXT_PUBLIC_SUBSCRIPTION_SOURCES || '').trim();
   
@@ -141,10 +145,11 @@ export const settingsStore = {
       // However, for simplicity and ensuring "auto update" as user requested, if it's in ENV, we act as if it's a fresh/enforced source
       // actually, let's just merge them by URL.
 
-      const mergedSubscriptions = [...storedSubscriptions];
+      // Drop the retired default subscription that older visitors still have saved locally
+      const mergedSubscriptions = storedSubscriptions.filter((s: any) => s && s.url !== LEGACY_DEFAULT_SUBSCRIPTION_URL);
 
       envSubscriptions.forEach(envSub => {
-        const existingIndex = mergedSubscriptions.findIndex(s => s.url === envSub.url);
+        const existingIndex = mergedSubscriptions.findIndex((s: any) => s.url === envSub.url);
         if (existingIndex > -1) {
           // Update name if changed in ENV, but keep ID and lastUpdated from local to avoid unnecessary re-fetches or ID shifts if dependent
           // BUT, if the user explicitly wants "ENV input... automatically update", maybe they mean the content updates.
@@ -161,7 +166,8 @@ export const settingsStore = {
 
       // Filter out invalid sources (missing baseUrl etc)
       const validSources = (Array.isArray(parsed.sources) ? parsed.sources : getDefaultSources())
-        .filter((s: any) => s && s.id && s.name && s.baseUrl);
+        // "premium"/"adult" entries imported by the old subscription don't belong in the public list
+        .filter((s: any) => s && s.id && s.name && s.baseUrl && (!s.group || s.group === 'normal'));
 
       const validAdultSources = (Array.isArray(parsed.adultSources) ? parsed.adultSources : getDefaultAdultSources())
         .filter((s: any) => s && s.id && s.name && s.baseUrl);
@@ -246,7 +252,7 @@ export const settingsStore = {
     let changed = false;
 
     envSubs.forEach(envSub => {
-      const existingIndex = mergedSubscriptions.findIndex(s => s.url === envSub.url);
+      const existingIndex = mergedSubscriptions.findIndex((s: any) => s.url === envSub.url);
       if (existingIndex > -1) {
         // Only update if something meaningful changed to avoid unnecessary re-renders
         if (mergedSubscriptions[existingIndex].name !== envSub.name) {

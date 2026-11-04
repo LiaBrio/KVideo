@@ -10,8 +10,6 @@ import { getSourceById } from '@/lib/api/video-sources';
 import { getSourceName } from '@/lib/utils/source-names';
 
 export const runtime = 'edge';
-// 静态导出时需要配置，但 API 路由会被跳过（配置值不重要）
-export const dynamic = 'force-static';
 export const revalidate = 0;
 
 export async function POST(request: NextRequest) {
