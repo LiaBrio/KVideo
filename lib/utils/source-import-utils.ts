@@ -85,10 +85,13 @@ export function parseSourcesFromJson(jsonString: string): ImportResult {
 
         const source = convertToVideoSource(item);
 
-        if (item.group === 'adult') {
-            adultSources.push(source);
-        } else {
+        // Only an explicit "normal" (or missing) group is a normal source. Third-party
+        // lists use other labels such as "premium" for adult sites, which must never
+        // end up in the public list.
+        if (!item.group || item.group === 'normal') {
             normalSources.push(source);
+        } else {
+            adultSources.push(source);
         }
     }
 
